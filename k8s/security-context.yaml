@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: streamzip-security-context
+data:
+  readme: |
+    This ConfigMap contains security policies for the StreamZip application.
+    The application runs with restricted privileges and only has access to the
+    mounted data folder (/Users/stefan.dobrovolny/data) for security reasons.

@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streamzip
+  labels:
+    app: streamzip
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: streamzip
+  template:
+    metadata:
+      labels:
+        app: streamzip
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: streamzip
+        image: ${REGISTRY_URL}/streamzip:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        securityContext:
+          readOnlyRootFilesystem: false
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: folders-volume
+          mountPath: /app/Folders
+          readOnly: true
+      volumes:
+      - name: folders-volume
+        hostPath:
+          path: /Users/stefan.dobrovolny/data
+          type: Directory

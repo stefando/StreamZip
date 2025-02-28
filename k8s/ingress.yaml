@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: streamzip-ingress
+  annotations:
+    ingress.kubernetes.io/ssl-redirect: "false"
+    traefik.ingress.kubernetes.io/router.middlewares: default-strip-prefix@kubernetescrd
+    # Support large file downloads
+    traefik.ingress.kubernetes.io/proxy-body-size: "0"
+    traefik.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    traefik.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /streamzip
+        pathType: Prefix
+        backend:
+          service:
+            name: streamzip
+            port:
+              number: 80
