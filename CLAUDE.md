@@ -12,7 +12,7 @@ StreamZip is a .NET web application designed to efficiently stream folders as ZI
 - Test with rate limiting: `task test-download-limited`
 
 ## Key Information
-- Uses .NET 8.0 (not 9.0 which causes compatibility issues)
+- Uses .NET 9.0
 - K8s deployment configured with Traefik ingress
 - Volume mount: `/Users/stefan.dobrovolny/data` mapped to `/app/Folders`
 - Content-length calculation times out after 20 seconds (returns 413 error)
