@@ -8,6 +8,7 @@ vars:
   REGISTRY_NAME: streamzip-registry
   REGISTRY_PORT: 5001
   IMAGE_NAME: streamzip
+  NAMESPACE: gummi
 
 tasks:
   default:
@@ -32,16 +33,18 @@ tasks:
       - cp k8s/deployment-with-registry.yaml k8s/deployment.yaml.temp
       - mv k8s/deployment.yaml k8s/deployment.yaml.bak
       - mv k8s/deployment-with-registry.yaml k8s/deployment.yaml
-      - kubectl apply -k k8s/
+      - kubectl create namespace {{.NAMESPACE}} 2>/dev/null || true
+      - kubectl apply -k k8s/ -n {{.NAMESPACE}}
       - mv k8s/deployment.yaml.bak k8s/deployment.yaml
       - rm -f k8s/deployment.yaml.temp
       - echo "Waiting for deployment to be ready"
-      - kubectl wait --for=condition=available --timeout=120s deployment/streamzip
+      - kubectl wait --for=condition=available --timeout=120s -n {{.NAMESPACE}} deployment/streamzip
       - echo "StreamZip application deployed successfully"
 
   clean-resources:
     desc: Remove k3d resources
     cmds:
+      - kubectl delete namespace {{.NAMESPACE}} 2>/dev/null || true
       - k3d registry delete {{.REGISTRY_NAME}} 2>/dev/null || true
       - k3d cluster delete {{.CLUSTER_NAME}} 2>/dev/null || true
 
@@ -49,6 +52,7 @@ tasks:
     desc: Test download endpoint
     cmds:
       - curl -v "http://localhost:8080/streamzip/download/test" -o downloaded.zip
+      - echo "Tip: Use browser DevTools Network tab with throttling to test streaming"
 
   test-download-limited:
     desc: Test download with rate limiting

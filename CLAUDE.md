@@ -26,6 +26,14 @@ StreamZip is a .NET web application designed to efficiently stream folders as ZI
 - Task automation available for all development workflows
 - Data directory must exist at `/Users/stefan.dobrovolny/data`
 - Repository at: https://github.com/stefando/StreamZip
+- All resources deployed to dedicated namespace: `gummi`
+
+## Debugging Tips
+- For browser testing with throttling, use Chrome DevTools Network tab
+- Remote debugging possible with k3d using port-forwarding:
+  - `kubectl port-forward -n gummi pod/[pod-name] 5000:5000`
+  - Configure Rider with ".NET Remote Debug" pointing to localhost:5000
+- Content-Length calculation is critical for proper download behavior
 
 ## Previous Session Notes
 - Optimized for streaming large files from Kubernetes pods
