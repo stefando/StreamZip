@@ -3,10 +3,13 @@
 ## Project Overview
 StreamZip is a .NET web application designed to efficiently stream folders as ZIP archives in Kubernetes environments.
 
-## Commands
-- Deploy to k3d cluster: `./create-k3d-cluster.sh`
-- Test download with curl: `curl -v "http://localhost:8080/streamzip/download/{folderName}" -o downloaded.zip`
-- Test with rate limiting: `curl -v "http://localhost:8080/streamzip/download/{folderName}" --limit-rate 100k -o downloaded.zip`
+## Commands (Use Task)
+- Use Task automation for all operations: `task <command>`
+- List available tasks: `task`
+- Create cluster & deploy: `task create-cluster`
+- Clean resources: `task clean-resources`
+- Test download: `task test-download`
+- Test with rate limiting: `task test-download-limited`
 
 ## Key Information
 - Uses .NET 9
@@ -14,8 +17,16 @@ StreamZip is a .NET web application designed to efficiently stream folders as ZI
 - Volume mount: `/Users/stefan.dobrovolny/data` mapped to `/app/Folders`
 - Content-length calculation times out after 20 seconds (returns 413 error)
 - Security context runs container as non-root with read-only volume
+- Registry port 5001 (fixed for MacBook port conflict, default would be 5000)
+
+## Environment Configuration
+- Registry port 5001 must be used due to port conflicts on MacBook
+- Task automation available for all development workflows
+- Data directory must exist at `/Users/stefan.dobrovolny/data`
+- Repository at: https://github.com/stefando/StreamZip
 
 ## Previous Session Notes
 - Optimized for streaming large files from Kubernetes pods
 - Modified error handling to return 413 for too-large folders rather than falling back to chunked encoding
-- Repository created at: https://github.com/stefando/StreamZip
+- Added Task automation to simplify development workflow
+- Fixed registry connection issues in cluster setup
