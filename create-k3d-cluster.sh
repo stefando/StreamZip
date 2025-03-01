@@ -4,7 +4,7 @@ set -e
 # Define variables
 CLUSTER_NAME="streamzip-cluster"
 REGISTRY_NAME="streamzip-registry"
-REGISTRY_PORT="5000"
+REGISTRY_PORT="5001"
 IMAGE_NAME="streamzip"
 IMAGE_TAG=$(date +%Y%m%d-%H%M%S)
 
@@ -15,29 +15,37 @@ if ! command -v k3d &> /dev/null; then
     exit 1
 fi
 
-# Check if the cluster already exists
-if k3d cluster list | grep -q $CLUSTER_NAME; then
-    echo "Cluster $CLUSTER_NAME already exists."
-else
-    echo "Creating k3d cluster: $CLUSTER_NAME with registry $REGISTRY_NAME"
-    k3d registry create $REGISTRY_NAME --port $REGISTRY_PORT
-    
-    # Create data directory if it doesn't exist
-    DATA_DIR="/Users/stefan.dobrovolny/data"
-    if [ ! -d "$DATA_DIR" ]; then
-        echo "Creating data directory at $DATA_DIR"
-        mkdir -p "$DATA_DIR"
-        chmod 755 "$DATA_DIR"
-    fi
-    
-    k3d cluster create $CLUSTER_NAME \
-        --agents 1 \
-        --registry-use k3d-$REGISTRY_NAME:$REGISTRY_PORT \
-        --port "8080:80@loadbalancer" \
-        --volume "$DATA_DIR:$DATA_DIR"
-    
-    echo "Cluster created successfully!"
+# Clean up any previous deployments
+echo "Cleaning up previous deployments..."
+k3d registry delete $REGISTRY_NAME 2>/dev/null || true
+k3d cluster delete $CLUSTER_NAME 2>/dev/null || true
+
+# Create registry
+echo "Creating k3d registry: $REGISTRY_NAME"
+k3d registry create $REGISTRY_NAME --port $REGISTRY_PORT
+sleep 3  # Give registry time to start
+
+# Check registry status
+echo "Verifying registry is running..."
+docker ps | grep k3d-$REGISTRY_NAME || { echo "Registry failed to start"; exit 1; }
+
+# Create data directory if it doesn't exist
+DATA_DIR="/Users/stefan.dobrovolny/data"
+if [ ! -d "$DATA_DIR" ]; then
+    echo "Creating data directory at $DATA_DIR"
+    mkdir -p "$DATA_DIR"
+    chmod 755 "$DATA_DIR"
 fi
+
+# Create cluster with registry
+echo "Creating k3d cluster: $CLUSTER_NAME"
+k3d cluster create $CLUSTER_NAME \
+    --agents 1 \
+    --registry-use k3d-$REGISTRY_NAME:$REGISTRY_PORT \
+    --port "8080:80@loadbalancer" \
+    --volume "$DATA_DIR:$DATA_DIR"
+
+echo "Cluster created successfully!"
 
 # Set kubectl context to the new cluster
 kubectl config use-context k3d-$CLUSTER_NAME
