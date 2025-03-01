@@ -15,6 +15,9 @@ builder.WebHost.ConfigureKestrel(options =>
     
     // Limit the number of concurrent connections to prevent resource exhaustion in K8s pod
     options.Limits.MaxConcurrentConnections = 100;
+    
+    // Allow synchronous IO operations
+    options.AllowSynchronousIO = true;
 });
 
 var app = builder.Build();

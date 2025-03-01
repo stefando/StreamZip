@@ -1,3 +1,5 @@
+# https://taskfile.dev
+
 version: '3'
 
 vars:
@@ -6,18 +8,26 @@ vars:
   REGISTRY_NAME: streamzip-registry
   REGISTRY_PORT: 5001
   IMAGE_NAME: streamzip
-  IMAGE_TAG:
-    sh: date +%Y%m%d-%H%M%S
 
 tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+    silent: true
+
   create-cluster:
     desc: Create k3d cluster and deploy application
-    deps: [clean-resources, ensure-datadir, registry, push-image]
+    deps:
+      - clean-resources
+      - ensure-datadir
+      - registry
+      - push-image
     cmds:
-      - echo "Creating k3d cluster: {{.CLUSTER_NAME}}..."
+      - echo "Creating k3d cluster {{.CLUSTER_NAME}}"
       - k3d cluster create {{.CLUSTER_NAME}} --agents 1 --registry-use k3d-{{.REGISTRY_NAME}}:{{.REGISTRY_PORT}} --port "8080:80@loadbalancer" --volume "{{.DATA_DIR}}:{{.DATA_DIR}}"
       - kubectl config use-context k3d-{{.CLUSTER_NAME}}
-      - echo "Creating deployment with registry URL..."
+      - echo "Creating deployment with registry URL"
       - sed "s|\${REGISTRY_URL}|k3d-{{.REGISTRY_NAME}}:{{.REGISTRY_PORT}}|g" k8s/deployment.yaml > k8s/deployment-with-registry.yaml
       - cp k8s/deployment-with-registry.yaml k8s/deployment.yaml.temp
       - mv k8s/deployment.yaml k8s/deployment.yaml.bak
@@ -25,20 +35,12 @@ tasks:
       - kubectl apply -k k8s/
       - mv k8s/deployment.yaml.bak k8s/deployment.yaml
       - rm -f k8s/deployment.yaml.temp
-      - echo "Waiting for deployment to be ready..."
+      - echo "Waiting for deployment to be ready"
       - kubectl wait --for=condition=available --timeout=120s deployment/streamzip
-      - |
-        echo "======================================================"
-        echo "StreamZip application deployed successfully!"
-        echo "Image tag: {{.IMAGE_TAG}}"
-        echo "Access the application at: http://localhost:8080/streamzip/download/{folderName}"
-        echo ""
-        echo "Mounted directory: {{.DATA_DIR}}"
-        echo "Place files in this directory to access them through the application"
-        echo "======================================================"
+      - echo "StreamZip application deployed successfully"
 
   clean-resources:
-    desc: Remove k3d resources (registry and cluster)
+    desc: Remove k3d resources
     cmds:
       - k3d registry delete {{.REGISTRY_NAME}} 2>/dev/null || true
       - k3d cluster delete {{.CLUSTER_NAME}} 2>/dev/null || true
@@ -63,7 +65,6 @@ tasks:
     cmds:
       - mkdir -p {{.DATA_DIR}}
       - chmod 755 {{.DATA_DIR}}
-      - echo "Data directory ready at {{.DATA_DIR}}"
 
   registry:
     desc: Create registry only
@@ -72,19 +73,16 @@ tasks:
       - k3d registry create {{.REGISTRY_NAME}} --port {{.REGISTRY_PORT}}
       - sleep 3
       - docker ps | grep k3d-{{.REGISTRY_NAME}} || (echo "Registry failed to start" && exit 1)
-      - echo "Registry running at localhost:{{.REGISTRY_PORT}}"
 
   push-image:
     desc: Build and push image to registry
-    deps: [build-image]
+    deps:
+      - build-image
+    vars:
+      IMAGE_TAG: '{{now | date "20060102-150405"}}'
     cmds:
-      - docker tag {{.IMAGE_NAME}}:local k3d-{{.REGISTRY_NAME}}:{{.REGISTRY_PORT}}/{{.IMAGE_NAME}}:{{.IMAGE_TAG}}
-      - docker tag {{.IMAGE_NAME}}:local k3d-{{.REGISTRY_NAME}}:{{.REGISTRY_PORT}}/{{.IMAGE_NAME}}:latest
-      - docker push k3d-{{.REGISTRY_NAME}}:{{.REGISTRY_PORT}}/{{.IMAGE_NAME}}:{{.IMAGE_TAG}}
-      - docker push k3d-{{.REGISTRY_NAME}}:{{.REGISTRY_PORT}}/{{.IMAGE_NAME}}:latest
-      - echo "Image pushed with tag: {{.IMAGE_TAG}}"
-
-  default:
-    desc: List available tasks
-    cmds:
-      - task --list
+      - docker tag {{.IMAGE_NAME}}:local localhost:{{.REGISTRY_PORT}}/{{.IMAGE_NAME}}:{{.IMAGE_TAG}}
+      - docker tag {{.IMAGE_NAME}}:local localhost:{{.REGISTRY_PORT}}/{{.IMAGE_NAME}}:latest
+      - docker push localhost:{{.REGISTRY_PORT}}/{{.IMAGE_NAME}}:{{.IMAGE_TAG}}
+      - docker push localhost:{{.REGISTRY_PORT}}/{{.IMAGE_NAME}}:latest
+      - echo "Image pushed with tag {{.IMAGE_TAG}}"

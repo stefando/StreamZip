@@ -12,12 +12,14 @@ StreamZip is a .NET web application designed to efficiently stream folders as ZI
 - Test with rate limiting: `task test-download-limited`
 
 ## Key Information
-- Uses .NET 9
+- Uses .NET 8.0 (not 9.0 which causes compatibility issues)
 - K8s deployment configured with Traefik ingress
 - Volume mount: `/Users/stefan.dobrovolny/data` mapped to `/app/Folders`
 - Content-length calculation times out after 20 seconds (returns 413 error)
+- Content-length calculation is critical feature, use explicit content-length instead of chunked encoding
 - Security context runs container as non-root with read-only volume
 - Registry port 5001 (fixed for MacBook port conflict, default would be 5000)
+- AllowSynchronousIO must be enabled due to ZipArchive requiring synchronous operations
 
 ## Environment Configuration
 - Registry port 5001 must be used due to port conflicts on MacBook
